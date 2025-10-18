@@ -1,5 +1,5 @@
 // dining.cpp — minimal base (single file, C++ + Pthreads)
-// Build: g++ -std=c++17 -O2 dining.cpp -lpthread -o dining
+// Build: g++ -std=c++17 -O2 diningPhilosopher.cpp -lpthread -o dining
 
 #include <pthread.h>
 #include <cstdlib>
@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 const int N = 5;
+const int ROUNDS = 5; //fixed amount of rounds 
 
 enum class State { Thinking, Hungry, Eating };
 
@@ -17,7 +18,14 @@ pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  can_eat[N];
 State state_of[N];
 
-// eighbors philosophers
+// prints one line for each philosopher
+void println(const std::string& s){
+    pthread_mutex_lock(&cout_mtx);
+    std::cout << s << '\n';
+    pthread_mutex_unlock(&cout_mtx);
+}
+
+// neighbors philosophers
 int left_neighbor(int i)  { return (i + N - 1) % N; }
 int right_neighbor(int i) { return (i + 1) % N; }
 // fork indices philosophers around the table
@@ -43,9 +51,9 @@ void pickup_forks(int i) {
         pthread_cond_wait(&can_eat[i], &mtx);
     }
     
-    std::cout << "Philosopher " << i << " has fork " << right_fork(i) << "\n";
-    std::cout << "Philosopher " << i << " has fork " << left_fork(i) << "\n";
-    std::cout << "Philosopher " << i << " started eating\n";
+    println("Philosopher " + std::to_string(i) + " has fork " + std::to_string(right_fork(i)));
+    println("Philosopher " + std::to_string(i) + " has fork " + std::to_string(left_fork(i)));
+    println("Philosopher " + std::to_string(i) + " started eating");
     pthread_mutex_unlock(&mtx);
 }
 
@@ -53,8 +61,8 @@ void pickup_forks(int i) {
 void return_forks(int i) {
     pthread_mutex_lock(&mtx);
     state_of[i] = State::Thinking;
-    std::cout << "Philosopher " << i << " returned their forks " << right_fork(i) 
-              << " and " << left_fork(i) << "\n";
+    println("Philosopher " + std::to_string(i) + " returned their forks " +
+        std::to_string(right_fork(i)) + " and " + std::to_string(left_fork(i)));
     check_can_eat(left_neighbor(i));
     check_can_eat(right_neighbor(i));
     pthread_mutex_unlock(&mtx);
@@ -62,28 +70,31 @@ void return_forks(int i) {
 
 // sims thinking
 void think(int i) {
-    float time_slept = (rand() % 3 + 1);
-    std::cout << "Philosopher " << i << " started thinking" << std::endl;
+    int time_slept = rand() % 3 + 1;   
+    println("Philosopher " + std::to_string(i) + " started thinking");
     sleep(time_slept);
-    std::cout << "Philosopher " << i << " thought for " << time_slept << " seconds\n";
+    println("Philosopher " + std::to_string(i) + " thought for " + std::to_string(time_slept) + " seconds");
+
 }
 
 // sims eating
 void eat(int i) {
-    float time_slept = (rand() % 3 + 1);
+    int time_slept = rand() % 3 + 1;  
     sleep(time_slept);
-    std::cout << "Philosopher " << i << " ate for " << time_slept << " seconds\n";
+    println("Philosopher " + std::to_string(i) + " ate for " + std::to_string(time_slept) + " seconds");
+
 }
 
  // runs the sim
 void* philosopher(void* arg) {
     int id = *(int*)arg;
-    while (true) {
+    for(int r = 0; r < ROUNDS; ++r){
         think(id);
         pickup_forks(id);
         eat(id);
         return_forks(id);
     }
+    
     return nullptr;
 }
 
