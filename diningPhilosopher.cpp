@@ -9,8 +9,6 @@
 #include <unistd.h>
 
 const int N = 5;
-const int ROUNDS = 5; //fixed amount of rounds 
-
 enum class State { Thinking, Hungry, Eating };
 
 pthread_mutex_t cout_mtx = PTHREAD_MUTEX_INITIALIZER;
@@ -88,13 +86,12 @@ void eat(int i) {
  // runs the sim
 void* philosopher(void* arg) {
     int id = *(int*)arg;
-    for(int r = 0; r < ROUNDS; ++r){
+    while(true) {
         think(id);
         pickup_forks(id);
         eat(id);
         return_forks(id);
     }
-    
     return nullptr;
 }
 
